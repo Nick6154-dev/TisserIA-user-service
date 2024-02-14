@@ -5,13 +5,18 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import yps.systems.ai.model.UserEntity;
+import yps.systems.ai.model.UserImageCollection;
 import yps.systems.ai.model.UserNode;
 import yps.systems.ai.repository.IUserEntityRepository;
+import yps.systems.ai.repository.IUserImageRepository;
 import yps.systems.ai.repository.IUserNodeRepository;
 
 @RestController
 @RequestMapping("/userService")
 public class UserController {
+
+    @Autowired
+    private IUserImageRepository imageRepository;
 
     @Autowired
     private IUserNodeRepository nodeRepository;
@@ -30,6 +35,16 @@ public class UserController {
                 .onErrorResume(error -> {
                     System.out.println(error.getMessage());
                     return Mono.just(new UserEntity());
+                });
+    }
+
+    @GetMapping("/getImageUserById/{idUser}")
+    public Mono<UserImageCollection> getImageUserById(@PathVariable Long idUser) {
+        return imageRepository.findUserImageCollectionByIdUser(idUser)
+                .switchIfEmpty(Mono.just(new UserImageCollection(null, null, null)))
+                .onErrorResume(error -> {
+                    System.out.println(error.getMessage());
+                    return Mono.just(new UserImageCollection(null, null, null));
                 });
     }
 
@@ -56,6 +71,24 @@ public class UserController {
                 .onErrorResume(error -> {
                     System.out.println(error.getMessage());
                     return Mono.just(new UserEntity());
+                });
+    }
+
+    @PostMapping("/saveUserImage/{idUser}")
+    public Mono<UserImageCollection> saveUserImage(@PathVariable Long idUser, @RequestBody byte[] imageByte) {
+        return imageRepository.existsUserImageCollectionByIdUser(idUser)
+                .flatMap(exists -> {
+                    UserImageCollection userImage = new UserImageCollection(idUser, imageByte);
+                    if (exists) {
+                        return imageRepository.deleteUserImageCollectionByIdUser(idUser)
+                                .then(imageRepository.save(userImage));
+                    } else {
+                        return imageRepository.save(userImage);
+                    }
+                })
+                .onErrorResume(error -> {
+                    System.out.println(error.getMessage());
+                    return Mono.just(new UserImageCollection(null, null));
                 });
     }
 

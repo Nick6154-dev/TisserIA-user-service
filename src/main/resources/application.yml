@@ -13,3 +13,8 @@ spring:
     authentication:
       username: neo4j
       password: 6154277353
+  data:
+    mongodb:
+      database: tisser
+      uri: mongodb://localhost:27017/tisser
+      authentication-database: mongo
